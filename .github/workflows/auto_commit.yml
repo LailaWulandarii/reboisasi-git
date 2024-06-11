@@ -1,0 +1,42 @@
+name: Commit cheat
+
+on:
+  push:
+    branches:
+      - master
+      
+  schedule:
+    - cron: "0 */8 * * *"  
+
+jobs:
+  auto_commit:
+    runs-on: windows-latest 
+    steps:
+      - name: Set global directory
+        run: git config --global --add safe.directory /github/workspace
+      - uses: actions/checkout@v3     
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Modify last update
+        run: |
+          $d = Get-Date -Format 'yyyy-MM-ddTHH:mm:ssZ'
+          Set-Content -Path LAST_UPDATED -Value $d
+      - name: Check for changes
+        id: git_diff
+        run: |
+          git fetch
+          git diff --exit-code || echo "changes" > changes_detected
+      - name: Commit changes
+        if: steps.git_diff.outputs.changes_detected == 'changes'
+        run: |
+          git config --local user.email "E41220418@student.polije.ac.id"
+          git config --local user.name "LailaWulandarii"
+          git add -A
+          git commit -m "Auto Commit"
+      - name: GitHub Push
+        if: steps.git_diff.outputs.changes_detected == 'changes'
+        run: |
+          git push origin master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
